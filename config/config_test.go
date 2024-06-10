@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/knadh/koanf/v2"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"runtime"
@@ -25,9 +26,9 @@ func TestParseEnv(t *testing.T) {
 		},
 		{
 			name:     "matchesHyphen",
-			config:   "kafka.security-protocol",
-			env:      "KAFKA_SECURITY_PROTOCOL",
-			expected: "kafka.security-protocol",
+			config:   "fhir.pseudonymizer.retry.max-wait",
+			env:      "FHIR_PSEUDONYMIZER_RETRY_MAX_WAIT",
+			expected: "fhir.pseudonymizer.retry.max-wait",
 		},
 		{
 			name:     "matchesOnlyExisting",
@@ -53,11 +54,11 @@ func TestParseEnv(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 
 	_, b, _, _ := runtime.Caller(0)
-	base := filepath.Join(filepath.Dir(b), "../..")
+	base := filepath.Join(filepath.Dir(b), "..")
 
 	c, _ := LoadConfig(base + "/app.yaml")
 
-	assert.Equal(t, c.App.Name, "consent-to-fhir")
+	assert.Equal(t, c.App.LogLevel, "info")
 }
 
 func TestLoadConfig_invalidPath(t *testing.T) {

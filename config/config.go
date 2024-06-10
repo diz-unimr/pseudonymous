@@ -16,7 +16,6 @@ type AppConfig struct {
 }
 
 type App struct {
-	Name     string `koanf:"name"`
 	LogLevel string `koanf:"log-level"`
 	Env      string `koanf:"env"`
 }
