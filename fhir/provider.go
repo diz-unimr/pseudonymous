@@ -2,7 +2,6 @@ package fhir
 
 import (
 	"context"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,18 +16,24 @@ import (
 type MongoResource struct {
 	Id         primitive.ObjectID `json:"id" bson:"_id"`
 	Fhir       bson.M             `json:"fhir" bson:"fhir"`
-	collection mongo.Collection
+	Collection *mongo.Collection  `json:"-" bson:"-"`
 }
 
 type Provider interface {
 	Read() ([]MongoResource, error)
-	Save(resource MongoResource) error
+	Write(resource MongoResource) error
+	Close() error
 }
 
 type MongoFhirProvider struct {
-	Client   *mongo.Client
-	Context  context.Context
-	Database *mongo.Database
+	Client      *mongo.Client
+	Context     context.Context
+	Source      *mongo.Database
+	Destination *mongo.Database
+}
+
+func (p *MongoFhirProvider) Close() error {
+	return p.Disconnect()
 }
 
 func NewProvider(config config.Provider, database string) *MongoFhirProvider {
@@ -42,42 +47,42 @@ func NewProvider(config config.Provider, database string) *MongoFhirProvider {
 		os.Exit(1)
 	}
 
-	// TODO configurable prefix
-	db := client.Database("idat_fhir_" + database)
+	// TODO configurable prefixes
+	source := client.Database("idat_fhir_" + database)
+	dest := client.Database("psn_fhir_" + database)
 
 	return &MongoFhirProvider{
-		Client:   client,
-		Context:  ctx,
-		Database: db,
+		Client:      client,
+		Context:     ctx,
+		Source:      source,
+		Destination: dest,
 	}
 }
 
-func (p *MongoFhirProvider) disconnect() {
-	if err := p.Client.Disconnect(p.Context); err != nil {
-		panic(err)
-	}
+func (p *MongoFhirProvider) Disconnect() error {
+	return p.Client.Disconnect(p.Context)
 }
 
 func (p *MongoFhirProvider) Read() ([]MongoResource, error) {
 	// get collections
-	collectionNames, err := p.Database.ListCollectionNames(context.Background(), bson.M{})
+	collectionNames, err := p.Source.ListCollectionNames(context.Background(), bson.M{})
 	if err != nil {
-		slog.Error("Failed to list collections from source database", "database", p.Database.Name(), "error", err.Error())
+		slog.Error("Failed to list collections from source database", "database", p.Source.Name(), "error", err.Error())
 		return nil, err
 	}
 
 	if len(collectionNames) == 0 {
-		slog.Error("No collections found in source database", "database", p.Database.Name())
+		slog.Error("No collections found in source database", "database", p.Source.Name())
 		return nil, err
 	}
 
 	var results []MongoResource
 	for _, colName := range collectionNames {
 		// get resources
-		collection := p.Database.Collection(colName)
+		collection := p.Source.Collection(colName)
 		cur, err := collection.Find(context.Background(), bson.M{})
 		if err != nil {
-			slog.Error("Failed to create cursor on database collection", "database", p.Database.Name(), "collection", colName, "error", err.Error())
+			slog.Error("Failed to create cursor on database collection", "database", p.Source.Name(), "collection", colName, "error", err.Error())
 			return nil, err
 		}
 
@@ -85,19 +90,27 @@ func (p *MongoFhirProvider) Read() ([]MongoResource, error) {
 		var resources []MongoResource
 
 		if err = cur.All(context.Background(), &resources); err != nil {
-			// TODO error handling
-			slog.Error("Failed to list collections from source database", "database", p.Database.Name(), "error", err.Error())
+			slog.Error("Failed to list collections from source database", "database", p.Source.Name(), "error", err.Error())
 			return nil, err
 		}
+		for i, _ := range resources {
+			resources[i].Collection = collection
+		}
 
-		slog.Info("Successfully read resources from database collection", "database", p.Database.Name(), "collection", colName, "count", len(resources))
+		slog.Info("Successfully read resources from database collection", "database", p.Source.Name(), "collection", colName, "count", len(resources))
 
 		results = slices.Concat(results, resources)
 	}
 	return results, nil
 }
 
-func (p *MongoFhirProvider) Save(resource MongoResource) error {
-	// TODO
-	return errors.New("failed to save data")
+func (p *MongoFhirProvider) Write(res MongoResource) error {
+
+	coll := p.Destination.Collection(res.Collection.Name())
+	result, err := coll.InsertOne(context.TODO(), res)
+	if err == nil {
+		slog.Info("Inserted document", "_id", result.InsertedID)
+	}
+
+	return err
 }

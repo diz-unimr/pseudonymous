@@ -44,7 +44,7 @@ func main() {
 
 	err = form.Run()
 	if err != nil {
-		slog.Error("Failed to run form", "error", err)
+		slog.Error("Failed to run form", "error", err.Error())
 		os.Exit(1)
 	}
 
@@ -55,13 +55,13 @@ func main() {
 			p := fhir.NewProcessor(appConfig, projectName)
 			err = p.Run()
 			if err != nil {
-				slog.Error("Processor run exited", "error", err)
+				slog.Error("Processor run exited", "error", err.Error())
 			}
 		}).
 		Run()
 
 	if err != nil {
-		slog.Error("Failed to run pseudonymization", "error", err)
+		slog.Error("Failed to run pseudonymization", "error", err.Error())
 	} else {
 		// TODO
 		slog.Info("Pseudonymization finished", "time", time.Since(start))

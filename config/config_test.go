@@ -9,8 +9,6 @@ import (
 )
 
 func TestParseEnv(t *testing.T) {
-	t.Setenv("APP_NAME", "test-app")
-	t.Setenv("KAFKA_SECURITY_PROTOCOL", "plaintext")
 
 	cases := []struct {
 		name     string

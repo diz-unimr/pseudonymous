@@ -22,6 +22,10 @@ func NewProcessor(config *config.AppConfig, project string) *Processor {
 	}
 }
 
+func (p *Processor) Close() error {
+	return p.provider.Close()
+}
+
 func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 
 	resData, err := json.Marshal(resource)
@@ -50,77 +54,73 @@ func (p *Processor) Run() error {
 	}
 
 	wg := new(sync.WaitGroup)
-	requests := make(chan MongoResource)
+	jobs := make(chan MongoResource)
 	results := make(chan MongoResource)
 
 	// TODO
 	numThreads := 5
 	for i := 0; i < numThreads; i++ {
 		wg.Add(1)
-		go p.createWorker(wg, requests)
+		go p.createWorker(wg, jobs, results)
 	}
 	slog.Info("Worker threads created", "threads", numThreads)
 
 	// send resources to workers
 	for _, r := range resources {
-		requests <- r
+		jobs <- r
 	}
 
-	// wait for resources to be processed
-	close(requests)
-	wg.Wait()
-	close(results)
+	go func() {
+		// wait for resources to be processed
+		close(jobs)
+		wg.Wait()
+		close(results)
+	}()
 
-	// TODO save from worker thread
+	// wait for results
 	var res []MongoResource
-
 	for result := range results {
 		res = append(res, result)
 	}
 
-	return nil
+	slog.Info("Finished processing results", "count", len(res), "results", res)
+
+	return p.provider.Close()
 }
 
-func (p *Processor) createWorker(wg *sync.WaitGroup, requests <-chan MongoResource) {
-	//, results chan<- MongoResource) {
+func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, results chan<- MongoResource) {
 	defer wg.Done()
 
-	//for {
-	//	select {
-	//	case r := <-requests:
-	//		// TODO error handling
-	//		psnResource, _ := p.Pseudonymize(r.Fhir)
-	//		var fhirBson bson.M
-	//		err := bson.UnmarshalExtJSON(psnResource, true, &fhirBson)
-	//		if err != nil {
-	//			slog.Error("Failed to convert psn data to BSON", err)
-	//			continue
-	//		}
-	//		results <- MongoResource{
-	//			Id:         r.Id,
-	//			Fhir:       fhirBson,
-	//			collection: r.collection,
-	//		}
-	//		//case <- QuitChan:
-	//		//	wg.Done()
-	//		//	return
-	//		//}
-	//	}
-	//}
+	for r := range jobs {
 
-	for r := range requests {
-		// TODO error handling
+		// pseudonymize
 		psnResource, _ := p.Pseudonymize(r.Fhir)
+
+		// unmarshal result
 		var fhirBson bson.M
 		err := bson.UnmarshalExtJSON(psnResource, true, &fhirBson)
 		if err != nil {
-			slog.Error("Failed to convert psn data to BSON", err)
+			slog.Error("Failed to convert psn data to BSON", "error", err.Error())
 			continue
 		}
-		//results <- MongoResource{
-		//	Id:         r.Id,
-		//	Fhir:       fhirBson,
-		//	collection: r.collection,
-		//}
+
+		// save result
+		psnResult := MongoResource{
+			Id:         r.Id,
+			Fhir:       fhirBson,
+			Collection: r.Collection,
+		}
+		err = p.provider.Write(psnResult)
+		if err != nil {
+			slog.Error("Failed to save psn data to database collection",
+				"id", psnResult.Id,
+				"collection", psnResult.Collection.Name(),
+				"error", err.Error())
+			continue
+		}
+
+		// send result
+		results <- psnResult
+
 	}
 }
