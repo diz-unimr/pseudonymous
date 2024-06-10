@@ -93,7 +93,7 @@ func (p *MongoFhirProvider) Read() ([]MongoResource, error) {
 			slog.Error("Failed to list collections from source database", "database", p.Source.Name(), "error", err.Error())
 			return nil, err
 		}
-		for i, _ := range resources {
+		for i := range resources {
 			resources[i].Collection = collection
 		}
 

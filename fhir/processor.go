@@ -30,13 +30,13 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 
 	resData, err := json.Marshal(resource)
 	if err != nil {
-		slog.Error("Unable to marshal resource to JSON", err)
+		slog.Error("Unable to marshal resource to JSON", err.Error())
 		return nil, err
 	}
 
 	resp, err := p.client.Send(resData, p.project+"-")
 	if err != nil {
-		slog.Error("Failed to pseudonymize resource", err)
+		slog.Error("Failed to pseudonymize resource", err.Error())
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (p *Processor) Run() error {
 
 	resources, err := p.provider.Read()
 	if err != nil {
-		slog.Error("Failed to read data", err)
+		slog.Error("Failed to read data", err.Error())
 		return err
 	}
 
