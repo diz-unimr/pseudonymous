@@ -1,0 +1,18 @@
+app:
+  log-level: info
+#  env: production
+
+gpas:
+  url:
+
+fhir:
+  provider:
+    mongodb:
+      connection: mongodb://localhost
+  pseudonymizer:
+    url: http://localhost:5000/fhir
+    retry:
+      count: 10
+      timeout: 10
+      wait: 5
+      max-wait: 20
