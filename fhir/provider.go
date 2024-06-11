@@ -108,7 +108,7 @@ func (p *MongoFhirProvider) Write(res MongoResource) error {
 
 	coll := p.Destination.Collection(res.Collection.Name())
 	opts := options.Update().SetUpsert(true)
-	update := bson.D{{"$set", bson.D{{"fhir", res.Fhir}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "fhir", Value: res.Fhir}}}}
 
 	_, err := coll.UpdateByID(context.Background(), res.Id, update, opts)
 	if err == nil {
