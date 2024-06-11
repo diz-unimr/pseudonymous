@@ -57,7 +57,7 @@ func (p *Processor) Run() error {
 	jobs := make(chan MongoResource)
 	results := make(chan MongoResource)
 
-	// TODO
+	// TODO configure
 	numThreads := 5
 	for i := 0; i < numThreads; i++ {
 		wg.Add(1)

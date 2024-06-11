@@ -107,9 +107,12 @@ func (p *MongoFhirProvider) Read() ([]MongoResource, error) {
 func (p *MongoFhirProvider) Write(res MongoResource) error {
 
 	coll := p.Destination.Collection(res.Collection.Name())
-	result, err := coll.InsertOne(context.TODO(), res)
+	opts := options.Update().SetUpsert(true)
+	update := bson.D{{"$set", bson.D{{"fhir", res.Fhir}}}}
+
+	_, err := coll.UpdateByID(context.Background(), res.Id, update, opts)
 	if err == nil {
-		slog.Info("Inserted document", "_id", result.InsertedID)
+		slog.Debug("Document written", "_id", res.Id.Hex())
 	}
 
 	return err
