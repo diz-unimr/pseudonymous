@@ -20,6 +20,7 @@ type MongoResource struct {
 }
 
 type Provider interface {
+	Name() string
 	Read() ([]MongoResource, error)
 	Write(resource MongoResource) error
 	Close() error
@@ -30,6 +31,7 @@ type MongoFhirProvider struct {
 	Context     context.Context
 	Source      *mongo.Database
 	Destination *mongo.Database
+	name        string
 }
 
 func (p *MongoFhirProvider) Close() error {
@@ -52,6 +54,7 @@ func NewProvider(config config.Provider, database string) *MongoFhirProvider {
 	dest := client.Database("psn_fhir_" + database)
 
 	return &MongoFhirProvider{
+		name:        "MongoFhirProvider",
 		Client:      client,
 		Context:     ctx,
 		Source:      source,
@@ -116,4 +119,8 @@ func (p *MongoFhirProvider) Write(res MongoResource) error {
 	}
 
 	return err
+}
+
+func (p *MongoFhirProvider) Name() string {
+	return p.name
 }

@@ -16,6 +16,17 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
       ME_CONFIG_BASICAUTH: false
 
+
+  mongo-seed:
+    image: mongo:7.0.5
+    volumes:
+      - ./seed:/seed
+    command: >
+      bash -c "for counter in {1..100}; do mongoimport --host mongo --db idat_fhir_test --collection Patient --type json --file /seed/test-data-patient.json --jsonArray && 
+      mongoimport --host mongo --db idat_fhir_test --collection Observation --type json --file /seed/test-data-observation.json --jsonArray; done"
+    links:
+      - mongo
+
   gpas:
     image: harbor.miracum.org/gpas/gpas:1.13.1-20230127
     ports:
@@ -30,6 +41,64 @@ services:
     volumes:
       - ./sqls/:/docker-entrypoint-initdb.d/
     command: --max_allowed_packet=20M --default-time-zone=Europe/Berlin
+
+  gpasinit-patient:
+    image: curlimages/curl:7.75.0
+    command: |
+      -X POST
+      -H 'Content-Type:application/xml'
+      -d '<?xml version="1.0" encoding="UTF-8"?>
+          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:psn="http://psn.ttp.ganimed.icmvc.emau.org/">
+            <soapenv:Header/>
+              <soapenv:Body>
+                <psn:addDomain>
+                  <domainDTO>
+                    <name>test-patient</name>
+                    <checkDigitClass>org.emau.icmvc.ganimed.ttp.psn.generator.ReedSolomonLagrange</checkDigitClass>
+                    <alphabet>org.emau.icmvc.ganimed.ttp.psn.alphabets.Symbol31</alphabet>
+                    <config>PSN_LENGTH=31;PSN_PREFIX=p;INCLUDE_PREFIX_IN_CHECK_DIGIT_CALCULATION=false;PSNS_DELETABLE=true;MAX_DETECTED_ERRORS=2;</config>
+                    <comment>Patient domain</comment>
+                  </domainDTO>
+                </psn:addDomain>
+            </soapenv:Body>
+          </soapenv:Envelope>'
+      --retry-connrefuse
+      --connect-timeout 10
+      --max-time 120
+      --retry 10
+      --retry-delay 10
+      http://gpas:8080/gpas/DomainService
+    depends_on:
+      - gpas
+
+  gpasinit-observation:
+    image: curlimages/curl:7.75.0
+    command: |
+      -X POST
+      -H 'Content-Type:application/xml'
+      -d '<?xml version="1.0" encoding="UTF-8"?>
+          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:psn="http://psn.ttp.ganimed.icmvc.emau.org/">
+            <soapenv:Header/>
+              <soapenv:Body>
+                <psn:addDomain>
+                  <domainDTO>
+                    <name>test-observation</name>
+                    <checkDigitClass>org.emau.icmvc.ganimed.ttp.psn.generator.ReedSolomonLagrange</checkDigitClass>
+                    <alphabet>org.emau.icmvc.ganimed.ttp.psn.alphabets.Symbol31</alphabet>
+                    <config>PSN_LENGTH=31;PSN_PREFIX=p;INCLUDE_PREFIX_IN_CHECK_DIGIT_CALCULATION=false;PSNS_DELETABLE=true;MAX_DETECTED_ERRORS=2;</config>
+                    <comment>Observation Domain</comment>
+                  </domainDTO>
+                </psn:addDomain>
+            </soapenv:Body>
+          </soapenv:Envelope>'
+      --retry-connrefuse
+      --connect-timeout 10
+      --max-time 120
+      --retry 10
+      --retry-delay 10
+      http://gpas:8080/gpas/DomainService
+    depends_on:
+      - gpas
 
   fhir-pseudonymizer:
     image: ghcr.io/miracum/fhir-pseudonymizer:v2.21.9

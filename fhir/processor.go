@@ -45,7 +45,7 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 
 func (p *Processor) Run() error {
 	// TODO
-	slog.Info("Reading resources", "provider", p.provider)
+	slog.Info("Reading resources", "provider", p.provider.Name())
 
 	resources, err := p.provider.Read()
 	if err != nil {
@@ -65,25 +65,26 @@ func (p *Processor) Run() error {
 	}
 	slog.Info("Worker threads created", "threads", numThreads)
 
-	// send resources to workers
-	for _, r := range resources {
-		jobs <- r
-	}
-
 	go func() {
+		// send resources to workers
+		for _, r := range resources {
+			jobs <- r
+		}
+
 		// wait for resources to be processed
 		close(jobs)
+		// wait for results
 		wg.Wait()
 		close(results)
 	}()
 
-	// wait for results
+	// read results
 	var res []MongoResource
 	for result := range results {
 		res = append(res, result)
 	}
 
-	slog.Info("Finished processing results", "count", len(res), "results", res)
+	slog.Info("Finished processing results", "count", len(res))
 
 	return p.provider.Close()
 }
@@ -118,6 +119,8 @@ func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, 
 				"error", err.Error())
 			continue
 		}
+
+		slog.Info("Successfully processed resource", "_id", psnResult.Id, "collections", psnResult.Collection.Name())
 
 		// send result
 		results <- psnResult
