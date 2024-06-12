@@ -1,0 +1,48 @@
+name: release
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["build"]
+    branches: main
+    types: [completed]
+  release:
+    types: [published]
+
+permissions: read-all
+
+jobs:
+  semantic-release:
+    name: Semantic release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    if: ${{ github.event_name != 'pull_request' && github.event_name != 'release' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v3
+        with:
+          extra_plugins: |
+            conventional-changelog-conventionalcommits@5.0.0
+        env:
+          # workflows created by GITHUB_TOKEN cannot trigger other workflows, see below
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+
+  release-linux-amd64:
+    name: release linux/amd64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: wangyoucao577/go-release-action@v1.50
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: linux
+          goarch: amd64
+          extra_files: app.yaml
