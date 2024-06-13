@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"pseudonymous/config"
 	"sync"
+	"time"
 )
 
 type Processor struct {
@@ -44,7 +45,8 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 }
 
 func (p *Processor) Run() error {
-	// TODO
+	start := time.Now()
+
 	slog.Info("Reading resources", "provider", p.provider.Name())
 
 	resources, err := p.provider.Read()
@@ -63,7 +65,7 @@ func (p *Processor) Run() error {
 		wg.Add(1)
 		go p.createWorker(wg, jobs, results)
 	}
-	slog.Info("Worker threads created", "threads", numThreads)
+	slog.Info("Worker created", "threads", numThreads)
 
 	go func() {
 		// send resources to workers
@@ -84,7 +86,7 @@ func (p *Processor) Run() error {
 		res = append(res, result)
 	}
 
-	slog.Info("Finished processing results", "count", len(res))
+	slog.Info("Finished processing results", "count", len(res), "time", time.Since(start))
 
 	return p.provider.Close()
 }
@@ -120,7 +122,7 @@ func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, 
 			continue
 		}
 
-		slog.Info("Successfully processed resource", "_id", psnResult.Id, "collections", psnResult.Collection.Name())
+		slog.Debug("Successfully processed resource", "_id", psnResult.Id, "collections", psnResult.Collection.Name())
 
 		// send result
 		results <- psnResult

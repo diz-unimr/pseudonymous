@@ -1,83 +1,84 @@
 package config
 
 import (
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/env"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/v2"
-	"regexp"
+	"github.com/lmittmann/tint"
+	"github.com/spf13/viper"
+	"log/slog"
+	"os"
 	"strings"
+	"time"
 )
 
 type AppConfig struct {
-	App  App  `koanf:"app"`
-	Gpas Gpas `koanf:"gpas"`
-	Fhir Fhir `koanf:"fhir"`
+	App  App  `mapstructure:"app"`
+	Gpas Gpas `mapstructure:"gpas"`
+	Fhir Fhir `mapstructure:"fhir"`
 }
 
 type App struct {
-	LogLevel string `koanf:"log-level"`
-	Env      string `koanf:"env"`
+	LogLevel string `mapstructure:"log-level"`
+	Env      string `mapstructure:"env"`
 }
 
 type Gpas struct {
-	Url string `koanf:"url"`
+	Url string `mapstructure:"url"`
 }
 
 type Fhir struct {
-	Pseudonymizer Pseudonymizer `koanf:"pseudonymizer"`
-	Provider      Provider      `koanf:"provider"`
+	Pseudonymizer Pseudonymizer `mapstructure:"pseudonymizer"`
+	Provider      Provider      `mapstructure:"provider"`
 }
 
 type Provider struct {
-	MongoDb MongoDb `koanf:"mongodb"`
+	MongoDb MongoDb `mapstructure:"mongodb"`
 }
 
 type MongoDb struct {
-	Connection string `koanf:"connection"`
+	Connection string `mapstructure:"connection"`
 }
 
 type Pseudonymizer struct {
-	Url   string `koanf:"url"`
-	Retry Retry  `koanf:"retry"`
+	Url   string `mapstructure:"url"`
+	Retry Retry  `mapstructure:"retry"`
 }
 
 type Retry struct {
-	Count   int `koanf:"count"`
-	Timeout int `koanf:"timeout"`
-	Wait    int `koanf:"wait"`
-	MaxWait int `koanf:"max-wait"`
+	Count   int `mapstructure:"count"`
+	Timeout int `mapstructure:"timeout"`
+	Wait    int `mapstructure:"wait"`
+	MaxWait int `mapstructure:"max-wait"`
 }
 
-func LoadConfig(path string) (*AppConfig, error) {
+func LoadConfig() error {
 
-	// load config file
-	var k = koanf.New(".")
-	f := file.Provider(path)
-	if err := k.Load(f, yaml.Parser()); err != nil {
-		return nil, err
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(`.`, `_`, `-`, `_`))
+
+	return viper.ReadInConfig()
+}
+
+func ConfigureLogger(c AppConfig) {
+
+	lvl := new(slog.LevelVar)
+	lvl.Set(slog.LevelInfo)
+
+	slog.SetDefault(slog.New(
+		tint.NewHandler(os.Stderr, &tint.Options{
+			Level:      lvl,
+			TimeFormat: time.Kitchen,
+		}),
+	))
+
+	//lvl := new(slog.LevelVar)
+	//lvl.Set(slog.LevelInfo)
+	//logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	//	Level: lvl,
+	//}))
+	//slog.SetDefault(logger)
+
+	// set configured log level
+	err := lvl.UnmarshalText([]byte(c.App.LogLevel))
+	if err != nil {
+		slog.Error("Unable to set Log level from application properties", "level", c.App.LogLevel, "error", err)
 	}
-	// replace env vars
-	_ = k.Load(env.Provider("", ".", func(s string) string {
-		return parseEnv(k, s)
-	}), nil)
-
-	return parseConfig(k), nil
-}
-
-func parseEnv(k *koanf.Koanf, s string) string {
-	r := "^" + strings.Replace(strings.ToLower(s), "_", "(.|-)", -1) + "$"
-
-	for _, p := range k.Keys() {
-		match, _ := regexp.MatchString(r, p)
-		if match {
-			return p
-		}
-	}
-	return ""
-}
-
-func parseConfig(k *koanf.Koanf) (config *AppConfig) {
-	_ = k.Unmarshal("", &config)
-	return config
 }
