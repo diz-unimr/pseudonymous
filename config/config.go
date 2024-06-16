@@ -69,13 +69,6 @@ func ConfigureLogger(c AppConfig) {
 		}),
 	))
 
-	//lvl := new(slog.LevelVar)
-	//lvl.Set(slog.LevelInfo)
-	//logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-	//	Level: lvl,
-	//}))
-	//slog.SetDefault(logger)
-
 	// set configured log level
 	err := lvl.UnmarshalText([]byte(c.App.LogLevel))
 	if err != nil {

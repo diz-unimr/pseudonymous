@@ -1,0 +1,17 @@
+app:
+  log-level:
+
+gpas:
+  url:
+
+fhir:
+  provider:
+    mongodb:
+      connection: dummyConnection
+  pseudonymizer:
+    url:
+    retry:
+      count: 10
+      timeout: 10
+      wait: 5
+      max-wait: 20
