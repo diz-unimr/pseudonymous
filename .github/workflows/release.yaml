@@ -42,6 +42,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+    if: ${{ github.event_name == 'release' }}
     steps:
       - uses: actions/checkout@v4
       - uses: wangyoucao577/go-release-action@v1.50
