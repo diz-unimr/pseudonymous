@@ -10,16 +10,23 @@ import (
 )
 
 type Processor struct {
-	provider Provider
-	client   *PsnClient
-	project  string
+	provider    Provider
+	client      *PsnClient
+	project     string
+	concurrency int
 }
 
 func NewProcessor(config *config.AppConfig, project string) *Processor {
+	concurrency := config.App.Concurrency
+	if concurrency == 0 {
+		concurrency = 1
+	}
+
 	return &Processor{
-		provider: NewProvider(config.Fhir.Provider, project),
-		client:   NewClient(config.Fhir.Pseudonymizer),
-		project:  project,
+		provider:    NewProvider(config.Fhir.Provider, project),
+		client:      NewClient(config.Fhir.Pseudonymizer),
+		project:     project,
+		concurrency: concurrency,
 	}
 }
 
@@ -47,30 +54,22 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 func (p *Processor) Run() error {
 	start := time.Now()
 
-	slog.Info("Reading resources", "provider", p.provider.Name())
-
-	resources, err := p.provider.Read()
-	if err != nil {
-		slog.Error("Failed to read data", "error", err.Error())
-		return err
-	}
-
 	wg := new(sync.WaitGroup)
 	jobs := make(chan MongoResource)
 	results := make(chan MongoResource)
 
-	// TODO configure
-	numThreads := 5
-	for i := 0; i < numThreads; i++ {
+	concurrency := p.concurrency
+	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
 		go p.createWorker(wg, jobs, results)
 	}
-	slog.Info("Worker created", "threads", numThreads)
+	slog.Info("Worker created", "concurrency", concurrency)
 
 	go func() {
-		// send resources to workers
-		for _, r := range resources {
-			jobs <- r
+		slog.Info("Reading resources", "provider", p.provider.Name())
+		err := p.provider.Read(jobs)
+		if err != nil {
+			slog.Error("Failed to read data", "error", err.Error())
 		}
 
 		// wait for resources to be processed

@@ -16,8 +16,8 @@ type AppConfig struct {
 }
 
 type App struct {
-	LogLevel string `mapstructure:"log-level"`
-	Env      string `mapstructure:"env"`
+	LogLevel    string `mapstructure:"log-level"`
+	Concurrency int    `mapstructure:"concurrency"`
 }
 
 type Gpas struct {
@@ -35,6 +35,7 @@ type Provider struct {
 
 type MongoDb struct {
 	Connection string `mapstructure:"connection"`
+	BatchSize  int    `mapstructure:"batch-size"`
 }
 
 type Pseudonymizer struct {

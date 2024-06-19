@@ -1,6 +1,6 @@
 app:
   log-level: info
-#  env: production
+  concurrency: 5
 
 gpas:
   url:
@@ -9,6 +9,7 @@ fhir:
   provider:
     mongodb:
       connection: mongodb://localhost
+      batch-size: 5000
   pseudonymizer:
     url: http://localhost:5000/fhir
     retry:
