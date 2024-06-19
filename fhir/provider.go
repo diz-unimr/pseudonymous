@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"pseudonymous/config"
-	"slices"
 	"time"
 )
 
@@ -21,7 +20,7 @@ type MongoResource struct {
 
 type Provider interface {
 	Name() string
-	Read() ([]MongoResource, error)
+	Read(chan<- MongoResource) error
 	Write(resource MongoResource) error
 	Close() error
 }
@@ -32,6 +31,7 @@ type MongoFhirProvider struct {
 	Source      *mongo.Database
 	Destination *mongo.Database
 	name        string
+	batchSize   int
 }
 
 func (p *MongoFhirProvider) Close() error {
@@ -45,11 +45,11 @@ func NewProvider(config config.Provider, database string) *MongoFhirProvider {
 	connection := config.MongoDb.Connection
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connection))
 	if err != nil {
-		slog.Error("failed to connect to mongo", "connection", connection)
+		slog.Error("Failed to connect to mongo", "connection", connection, "error", err.Error())
 		os.Exit(1)
 	}
 
-	// TODO configurable prefixes
+	// prefix by convention
 	source := client.Database("idat_fhir_" + database)
 	dest := client.Database("psn_fhir_" + database)
 
@@ -59,6 +59,7 @@ func NewProvider(config config.Provider, database string) *MongoFhirProvider {
 		Context:     ctx,
 		Source:      source,
 		Destination: dest,
+		batchSize:   config.MongoDb.BatchSize,
 	}
 }
 
@@ -66,45 +67,50 @@ func (p *MongoFhirProvider) Disconnect() error {
 	return p.Client.Disconnect(p.Context)
 }
 
-func (p *MongoFhirProvider) Read() ([]MongoResource, error) {
+func (p *MongoFhirProvider) Read(res chan<- MongoResource) error {
 	// get collections
 	collectionNames, err := p.Source.ListCollectionNames(context.Background(), bson.M{})
 	if err != nil {
 		slog.Error("Failed to list collections from source database", "database", p.Source.Name(), "error", err.Error())
-		return nil, err
+		return err
 	}
 
 	if len(collectionNames) == 0 {
 		slog.Error("No collections found in source database", "database", p.Source.Name())
-		return nil, err
+		return err
 	}
 
-	var results []MongoResource
+	// TODO context with timeout
+	ctx := context.Background()
+	batchSize := int32(p.batchSize)
+	slog.Info("Fetching data from source database", "database", p.Source.Name(), "batchSize", batchSize)
+
 	for _, colName := range collectionNames {
 		// get resources
 		collection := p.Source.Collection(colName)
-		cur, err := collection.Find(context.Background(), bson.M{})
+		cur, err := collection.Find(ctx, bson.M{}, options.Find().SetBatchSize(batchSize))
 		if err != nil {
 			slog.Error("Failed to create cursor on database collection", "database", p.Source.Name(), "collection", colName, "error", err.Error())
-			return nil, err
+			return err
 		}
 
-		// TODO read in batches
-		var resources []MongoResource
-
-		if err = cur.All(context.Background(), &resources); err != nil {
-			slog.Error("Failed to list collections from source database", "database", p.Source.Name(), "error", err.Error())
-			return nil, err
+		count := 0
+		for cur.Next(ctx) {
+			var result MongoResource
+			err = cur.Decode(&result)
+			if err != nil {
+				slog.Error("Failed to read next batch", "database", p.Source.Name(), "collection", colName, "error", err.Error())
+				return err
+			}
+			count++
+			result.Collection = collection
+			res <- result
 		}
-		for i := range resources {
-			resources[i].Collection = collection
-		}
 
-		slog.Info("Successfully read resources from database collection", "database", p.Source.Name(), "collection", colName, "count", len(resources))
+		slog.Info("Successfully read resources from database collection", "database", p.Source.Name(), "collection", colName, "count", count)
 
-		results = slices.Concat(results, resources)
 	}
-	return results, nil
+	return nil
 }
 
 func (p *MongoFhirProvider) Write(res MongoResource) error {
