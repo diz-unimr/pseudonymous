@@ -1,7 +1,9 @@
 package fhir
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"log/slog"
 	"pseudonymous/config"
@@ -80,12 +82,12 @@ func (p *Processor) Run() error {
 	}()
 
 	// read results
-	var res []MongoResource
-	for result := range results {
-		res = append(res, result)
+	m := make(map[string]int)
+	for r := range results {
+		m[r.Collection.Name()]++
 	}
 
-	slog.Info("Finished processing results", "count", len(res), "time", time.Since(start))
+	slog.Info("Finished processing results", "count", convertToString(m), "time", time.Since(start))
 
 	return p.provider.Close()
 }
@@ -127,4 +129,16 @@ func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, 
 		results <- psnResult
 
 	}
+}
+
+func convertToString(m map[string]int) string {
+	b := new(bytes.Buffer)
+	for key, value := range m {
+		_, err := fmt.Fprintf(b, "%s=%d ", key, value)
+		if err != nil {
+			return ""
+		}
+	}
+
+	return b.String()
 }
