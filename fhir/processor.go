@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"log/slog"
 	"pseudonymous/config"
+	"strings"
 	"sync"
 	"time"
 )
@@ -58,7 +59,7 @@ func (p *Processor) Run() error {
 
 	wg := new(sync.WaitGroup)
 	jobs := make(chan MongoResource)
-	results := make(chan MongoResource)
+	results := make(chan string)
 
 	concurrency := p.concurrency
 	for i := 0; i < concurrency; i++ {
@@ -84,7 +85,7 @@ func (p *Processor) Run() error {
 	// read results
 	m := make(map[string]int)
 	for r := range results {
-		m[r.Collection.Name()]++
+		m[r]++
 	}
 
 	slog.Info("Finished processing results", "count", convertToString(m), "time", time.Since(start))
@@ -92,7 +93,7 @@ func (p *Processor) Run() error {
 	return p.provider.Close()
 }
 
-func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, results chan<- MongoResource) {
+func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, results chan string) {
 	defer wg.Done()
 
 	for r := range jobs {
@@ -126,7 +127,7 @@ func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, 
 		slog.Debug("Successfully processed resource", "_id", psnResult.Id, "collections", psnResult.Collection.Name())
 
 		// send result
-		results <- psnResult
+		results <- psnResult.Collection.Name()
 
 	}
 }
@@ -140,5 +141,5 @@ func convertToString(m map[string]int) string {
 		}
 	}
 
-	return b.String()
+	return strings.TrimSpace(b.String())
 }
