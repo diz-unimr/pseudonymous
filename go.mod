@@ -7,10 +7,10 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/lmittmann/tint v1.0.4
 	github.com/samply/golang-fhir-models/fhir-models v0.3.2
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	go.mongodb.org/mongo-driver v1.15.0
+	go.mongodb.org/mongo-driver v1.15.1
 )
 
 require (
