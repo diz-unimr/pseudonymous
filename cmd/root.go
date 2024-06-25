@@ -31,7 +31,7 @@ func NewRootCmd() *cobra.Command {
 
 			config.ConfigureLogger(*cfg)
 			p := fhir.NewProcessor(cfg, projectName)
-			err := p.Run()
+			_, err := p.Run()
 			if err != nil {
 				slog.Error("Processor run exited", "error", err.Error())
 			}
