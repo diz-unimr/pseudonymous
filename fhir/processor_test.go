@@ -45,7 +45,7 @@ func TestRun(t *testing.T) {
 			Collection: nil,
 		}
 
-		collNames := []bson.D{{{"name", "Patient"}}, {{"name", "Observation"}}}
+		collNames := []bson.D{{{Key: "name", Value: "Patient"}}, {{Key: "name", Value: "Observation"}}}
 
 		// expect one Patient and one Observation in results
 		expResultCount := map[string]int{"Patient": 1, "Observation": 1}
