@@ -1,5 +1,5 @@
 # pseudonymous
-[![MegaLinter](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yml/badge.svg)](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yml) ![go](https://github.com/diz-unimr/pseudonymous/actions/workflows/build.yml/badge.svg) ![docker](https://github.com/diz-unimr/pseudonymous/actions/workflows/release.yml/badge.svg) [![codecov](https://codecov.io/github/diz-unimr/pseudonymous/branch/main/graph/badge.svg?token=waEHzvF9pf)](https://codecov.io/github/diz-unimr/pseudonymous)
+[![MegaLinter](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yml/badge.svg)](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yaml) ![go](https://github.com/diz-unimr/pseudonymous/actions/workflows/build.yaml/badge.svg) ![docker](https://github.com/diz-unimr/pseudonymous/actions/workflows/release.yaml/badge.svg) [![codecov](https://codecov.io/github/diz-unimr/pseudonymous/graph/badge.svg?token=waEHzvF9pf)](https://codecov.io/github/diz-unimr/pseudonymous)
 > Pseudonymize FHIR🔥 resources from and to MongoDB databases
 
 This is a command line tool to run pseudonymization / anonymization on FHIR resources via the
