@@ -19,6 +19,11 @@ type Processor struct {
 	concurrency int
 }
 
+type ProcessResult struct {
+	count    map[string]int
+	duration time.Duration
+}
+
 func NewProcessor(config *config.AppConfig, project string) *Processor {
 	concurrency := config.App.Concurrency
 	if concurrency == 0 {
@@ -54,7 +59,7 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 	return resp, nil
 }
 
-func (p *Processor) Run() error {
+func (p *Processor) Run() (ProcessResult, error) {
 	start := time.Now()
 
 	wg := new(sync.WaitGroup)
@@ -87,10 +92,11 @@ func (p *Processor) Run() error {
 	for r := range results {
 		m[r]++
 	}
+	end := time.Since(start)
 
-	slog.Info("Finished processing results", "count", convertToString(m), "time", time.Since(start))
+	slog.Info("Finished processing results", "count", convertToString(m), "duration", end)
 
-	return p.provider.Close()
+	return ProcessResult{count: m, duration: end}, nil
 }
 
 func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, results chan string) {
@@ -99,11 +105,14 @@ func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, 
 	for r := range jobs {
 
 		// pseudonymize
-		psnResource, _ := p.Pseudonymize(r.Fhir)
+		psnResource, err := p.Pseudonymize(r.Fhir)
+		if err != nil {
+			return
+		}
 
 		// unmarshal result
 		var fhirBson bson.M
-		err := bson.UnmarshalExtJSON(psnResource, true, &fhirBson)
+		err = bson.UnmarshalExtJSON(psnResource, true, &fhirBson)
 		if err != nil {
 			slog.Error("Failed to convert psn data to BSON", "error", err.Error())
 			continue
@@ -128,7 +137,6 @@ func (p *Processor) createWorker(wg *sync.WaitGroup, jobs <-chan MongoResource, 
 
 		// send result
 		results <- psnResult.Collection.Name()
-
 	}
 }
 

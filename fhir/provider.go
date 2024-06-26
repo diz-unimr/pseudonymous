@@ -80,19 +80,21 @@ func (p *MongoFhirProvider) Read(res chan<- MongoResource) error {
 		return err
 	}
 
-	// TODO context with timeout
 	ctx := context.Background()
 	batchSize := int32(p.batchSize)
 	slog.Info("Fetching data from source database", "database", p.Source.Name(), "batchSize", batchSize)
 
 	for _, colName := range collectionNames {
+
 		// get resources
+		var cur *mongo.Cursor
 		collection := p.Source.Collection(colName)
-		cur, err := collection.Find(ctx, bson.M{}, options.Find().SetBatchSize(batchSize))
+		cur, err = collection.Find(ctx, bson.M{}, options.Find().SetBatchSize(batchSize))
 		if err != nil {
 			slog.Error("Failed to create cursor on database collection", "database", p.Source.Name(), "collection", colName, "error", err.Error())
 			return err
 		}
+		defer closeCursor(cur, ctx)
 
 		count := 0
 		for cur.Next(ctx) {
@@ -110,7 +112,15 @@ func (p *MongoFhirProvider) Read(res chan<- MongoResource) error {
 		slog.Info("Successfully read resources from database collection", "database", p.Source.Name(), "collection", colName, "count", count)
 
 	}
+
 	return nil
+
+}
+
+func closeCursor(cur *mongo.Cursor, ctx context.Context) {
+	if cur != nil {
+		_ = cur.Close(ctx)
+	}
 }
 
 func (p *MongoFhirProvider) Write(res MongoResource) error {

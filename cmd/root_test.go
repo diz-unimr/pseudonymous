@@ -37,3 +37,25 @@ func setProjectDir() {
 
 	viper.Reset()
 }
+
+func TestExecuteCommand_InvalidFlag(t *testing.T) {
+	setProjectDir()
+	cfgFile = "./testdata/test.yaml"
+
+	rootCmd.SetArgs([]string{"--invalid-flag", "test"})
+
+	err := rootCmd.Execute()
+
+	assert.EqualError(t, err, "unknown flag: --invalid-flag")
+}
+
+func TestExecuteCommand_EmptyProject(t *testing.T) {
+	setProjectDir()
+	cfgFile = "./testdata/test.yaml"
+
+	rootCmd.SetArgs([]string{"-p", ""})
+
+	err := rootCmd.Execute()
+
+	assert.EqualError(t, err, "project name is empty")
+}

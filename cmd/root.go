@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log/slog"
@@ -14,20 +15,30 @@ var (
 	projectName string
 	cfgFile     string
 	cfg         *config.AppConfig
-	rootCmd     = &cobra.Command{
+	rootCmd     = NewRootCmd()
+)
+
+func NewRootCmd() *cobra.Command {
+
+	return &cobra.Command{
 		Use:   "pseudonymous",
 		Short: "Pseudonymization of FHIR resources via the FHIR Pseudonymizer service ",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateCmd(); err != nil {
+				slog.Error("Failed to validate command flags", "error", err.Error())
+				return err
+			}
 
 			config.ConfigureLogger(*cfg)
 			p := fhir.NewProcessor(cfg, projectName)
-			err := p.Run()
+			_, err := p.Run()
 			if err != nil {
 				slog.Error("Processor run exited", "error", err.Error())
 			}
+			return err
 		},
 	}
-)
+}
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -48,6 +59,7 @@ func init() {
 }
 
 func initConfig() {
+
 	if cfgFile != "" {
 		// use config file from the flag
 		viper.SetConfigFile(cfgFile)
@@ -72,4 +84,11 @@ func initConfig() {
 		slog.Error("Error unmarshalling app config", "error", err.Error())
 		os.Exit(1)
 	}
+}
+
+func validateCmd() error {
+	if projectName == "" {
+		return errors.New("project name is empty")
+	}
+	return nil
 }
