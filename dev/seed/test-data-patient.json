@@ -31,12 +31,8 @@
       "name": [
         {
           "family": "Levin",
-          "given": [
-            "Henry"
-          ],
-          "suffix": [
-            "The 7th"
-          ]
+          "given": ["Henry"],
+          "suffix": ["The 7th"]
         }
       ],
       "gender": "male",
