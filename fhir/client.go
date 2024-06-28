@@ -25,9 +25,9 @@ func NewClient(cfg config.Pseudonymizer) *PsnClient {
 		SetRetryMaxWaitTime(time.Duration(cfg.Retry.MaxWait) * time.Second)
 
 	// TODO
-	//if cfg.Auth != nil {
-	//	client = client.SetBasicAuth(cfg.Auth.User, cfg.Auth.Password)
-	//}
+	// if cfg.Auth != nil {
+	// 	 client = client.SetBasicAuth(cfg.Auth.User, cfg.Auth.Password)
+	// }
 
 	return &PsnClient{rest: client, config: cfg}
 }

@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log/slog"
-	"os"
 	"pseudonymous/config"
 	"time"
 )
@@ -46,7 +45,7 @@ func NewProvider(config config.Provider, database string) *MongoFhirProvider {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connection))
 	if err != nil {
 		slog.Error("Failed to connect to mongo", "connection", connection, "error", err.Error())
-		os.Exit(1)
+		return nil
 	}
 
 	// prefix by convention

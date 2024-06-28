@@ -3,6 +3,7 @@ package fhir
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"log/slog"
@@ -24,18 +25,22 @@ type ProcessResult struct {
 	duration time.Duration
 }
 
-func NewProcessor(config *config.AppConfig, project string) *Processor {
+func NewProcessor(config *config.AppConfig, project string) (*Processor, error) {
 	concurrency := config.App.Concurrency
 	if concurrency == 0 {
 		concurrency = 1
 	}
 
+	prov := NewProvider(config.Fhir.Provider, project)
+	if prov == nil {
+		return nil, errors.New("failed to initialize Provider")
+	}
 	return &Processor{
-		provider:    NewProvider(config.Fhir.Provider, project),
+		provider:    prov,
 		client:      NewClient(config.Fhir.Pseudonymizer),
 		project:     project,
 		concurrency: concurrency,
-	}
+	}, nil
 }
 
 func (p *Processor) Close() error {

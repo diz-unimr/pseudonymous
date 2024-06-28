@@ -1,5 +1,5 @@
 ---
 rules:
   truthy:
-    allowed-values: ['true','false']
+    allowed-values: ["true", "false"]
     check-keys: false
