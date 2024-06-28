@@ -71,8 +71,8 @@ func (c *PsnClient) Send(fhir []byte, domain string) ([]byte, error) {
 	if success {
 		slog.Log(context.Background(), slog.LevelDebug, "FHIR pseudonymizer response", "status", resp.Status(), "body", string(resp.Body()))
 		return resp.Body(), nil
-	} else {
-		slog.Log(context.Background(), slog.LevelError, "FHIR pseudonymizer response", "status", resp.Status(), "body", string(resp.Body()))
-		return nil, errors.New("FHIR pseudonymizer request returned no success")
 	}
+	slog.Log(context.Background(), slog.LevelError, "FHIR pseudonymizer response", "status", resp.Status(), "body", string(resp.Body()))
+	return nil, errors.New("FHIR pseudonymizer request returned no success")
+
 }

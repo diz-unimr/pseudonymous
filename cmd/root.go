@@ -23,7 +23,7 @@ func NewRootCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "pseudonymous",
 		Short: "Pseudonymization of FHIR resources via the FHIR Pseudonymizer service ",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if err := validateCmd(); err != nil {
 				slog.Error("Failed to validate command flags", "error", err.Error())
 				return err

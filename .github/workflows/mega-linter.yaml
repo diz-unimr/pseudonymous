@@ -46,6 +46,8 @@ jobs:
         # More info at https://megalinter.io/flavors/
         uses: oxsecurity/megalinter/flavors/cupcake@v7.12.0
         env:
+          # remove when megalinter container is using go 1.22
+          GOTOOLCHAIN: "go1.22.0+auto"
           # All available variables are described in documentation
           # https://megalinter.io/configuration/
           VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # Validates all source when push on main, else just the git diff with main. Override with true if you always want to lint all sources

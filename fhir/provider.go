@@ -94,7 +94,7 @@ func (p *MongoFhirProvider) Read(res chan<- MongoResource) error {
 			slog.Error("Failed to create cursor on database collection", "database", p.Source.Name(), "collection", colName, "error", err.Error())
 			return err
 		}
-		defer closeCursor(cur, ctx)
+		defer closeCursor(ctx, cur)
 
 		count := 0
 		for cur.Next(ctx) {
@@ -117,7 +117,7 @@ func (p *MongoFhirProvider) Read(res chan<- MongoResource) error {
 
 }
 
-func closeCursor(cur *mongo.Cursor, ctx context.Context) {
+func closeCursor(ctx context.Context, cur *mongo.Cursor) {
 	if cur != nil {
 		_ = cur.Close(ctx)
 	}
