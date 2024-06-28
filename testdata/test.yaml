@@ -1,5 +1,5 @@
 app:
-  log-level:
+  log-level: info
   concurrency:
 
 gpas:

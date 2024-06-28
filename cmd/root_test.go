@@ -59,3 +59,13 @@ func TestExecuteCommand_EmptyProject(t *testing.T) {
 
 	assert.EqualError(t, err, "project name is empty")
 }
+
+func TestNewRootCmd_Fails(t *testing.T) {
+	setProjectDir()
+	cfgFile = "./testdata/test.yaml"
+	projectName = "test"
+
+	cmd := NewRootCmd()
+
+	assert.Error(t, cmd.Execute())
+}
