@@ -44,7 +44,7 @@ services:
     command: --max_allowed_packet=20M --default-time-zone=Europe/Berlin
 
   gpasinit-patient:
-    image: curlimages/curl:7.75.0
+    image: curlimages/curl:7.88.1
     command: |
       -X POST
       -H 'Content-Type:application/xml'
@@ -85,7 +85,7 @@ services:
       - gpas
 
   gpasinit-observation:
-    image: curlimages/curl:7.75.0
+    image: curlimages/curl:7.88.1
     command: |
       -X POST
       -H 'Content-Type:application/xml'
