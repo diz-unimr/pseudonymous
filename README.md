@@ -1,5 +1,5 @@
 # pseudonymous
-[![MegaLinter](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yml/badge.svg)](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yaml) ![go](https://github.com/diz-unimr/pseudonymous/actions/workflows/build.yaml/badge.svg) ![docker](https://github.com/diz-unimr/pseudonymous/actions/workflows/release.yaml/badge.svg) [![codecov](https://codecov.io/github/diz-unimr/pseudonymous/graph/badge.svg?token=waEHzvF9pf)](https://codecov.io/github/diz-unimr/pseudonymous)
+[![MegaLinter](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yaml/badge.svg)](https://github.com/diz-unimr/pseudonymous/actions/workflows/mega-linter.yaml) ![go](https://github.com/diz-unimr/pseudonymous/actions/workflows/build.yaml/badge.svg) ![docker](https://github.com/diz-unimr/pseudonymous/actions/workflows/release.yaml/badge.svg) [![codecov](https://codecov.io/github/diz-unimr/pseudonymous/graph/badge.svg?token=waEHzvF9pf)](https://codecov.io/github/diz-unimr/pseudonymous)
 > Pseudonymize FHIR🔥 resources from and to MongoDB databases
 
 This is a command line tool to run pseudonymization / anonymization on FHIR resources via the
@@ -32,18 +32,20 @@ Binary releases and docker images are available under
 
 ## Configuration properties
 
-| Name                                | Default                      | Description                                                        |
-|-------------------------------------|------------------------------|--------------------------------------------------------------------|
-| `app.log-level`                     | info                         | Log level (error,warn,info,debug)                                  |
-| `app.concurrency`                   | 5                            | Number of concurrent threads                                       |
-| `gpas.url`                          |                              | URL to the gPAS service for auto-creating pseudonymization domains |
-| `fhir.provider.mongodb.connection`  | mongodb://localhost          | MongoDB connection string                                          |
-| `fhir.provider.mongodb.batch-size`  | 5000                         | Batch size when reading data from the source database              |
-| `fhir.pseudonymizer.url`            | <http://localhost:5000/fhir> | FHIR® Pseudonymizer endpoint                                       |
-| `fhir.pseudonymizer.retry.count`    | 10                           | Retry count                                                        |
-| `fhir.pseudonymizer.retry.timeout`  | 10                           | Retry timeout                                                      |
-| `fhir.pseudonymizer.retry.wait`     | 5                            | Retry wait between retries                                         |
-| `fhir.pseudonymizer.retry.max-wait` | 20                           | Retry maximum wait                                                 |
+| Name                                     | Default                      | Description                                                        |
+|------------------------------------------|------------------------------|--------------------------------------------------------------------|
+| `app.log-level`                          | info                         | Log level (error,warn,info,debug)                                  |
+| `app.concurrency`                        | 5                            | Number of concurrent threads                                       |
+| `gpas.url`                               |                              | URL to the gPAS service for auto-creating pseudonymization domains |
+| `fhir.provider.mongodb.connection`       | mongodb://localhost          | MongoDB connection string                                          |
+| `fhir.provider.mongodb.batch-size`       | 5000                         | Batch size when reading data from the source database              |
+| `fhir.pseudonymizer.url`                 | <http://localhost:5000/fhir> | FHIR® Pseudonymizer endpoint url                                   |
+| `fhir.pseudonymizer.auth.basic.username` |                              | BasicAuth username for the FHIR® Pseudonymizer endpoint            |
+| `fhir.pseudonymizer.auth.basic.password` |                              | BasicAuth password for the FHIR® Pseudonymizer endpoint            |
+| `fhir.pseudonymizer.retry.count`         | 10                           | Retry count                                                        |
+| `fhir.pseudonymizer.retry.timeout`       | 10                           | Retry timeout                                                      |
+| `fhir.pseudonymizer.retry.wait`          | 5                            | Retry wait between retries                                         |
+| `fhir.pseudonymizer.retry.max-wait`      | 20                           | Retry maximum wait                                                 |
 
 ### Environment variables
 
