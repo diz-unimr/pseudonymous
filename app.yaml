@@ -12,6 +12,10 @@ fhir:
       batch-size: 5000
   pseudonymizer:
     url: http://localhost:5000/fhir
+    auth:
+      basic:
+        username:
+        password:
     retry:
       count: 10
       timeout: 10

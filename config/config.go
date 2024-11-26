@@ -2,10 +2,8 @@ package config
 
 import (
 	"github.com/lmittmann/tint"
-	"github.com/spf13/viper"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -41,6 +39,16 @@ type MongoDb struct {
 type Pseudonymizer struct {
 	Url   string `mapstructure:"url"`
 	Retry Retry  `mapstructure:"retry"`
+	Auth  *Auth  `mapstructure:"auth"`
+}
+
+type Auth struct {
+	Basic *Basic `mapstructure:"basic"`
+}
+
+type Basic struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type Retry struct {
@@ -48,14 +56,6 @@ type Retry struct {
 	Timeout int `mapstructure:"timeout"`
 	Wait    int `mapstructure:"wait"`
 	MaxWait int `mapstructure:"max-wait"`
-}
-
-func LoadConfig() error {
-
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(`.`, `_`, `-`, `_`))
-
-	return viper.ReadInConfig()
 }
 
 func ConfigureLogger(c AppConfig) {
