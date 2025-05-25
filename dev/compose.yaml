@@ -119,7 +119,7 @@ services:
       - gpas
 
   fhir-pseudonymizer:
-    image: ghcr.io/miracum/fhir-pseudonymizer:v2.21.9
+    image: ghcr.io/miracum/fhir-pseudonymizer:v2.22.10
     environment:
       UseSystemTextJsonFhirSerializer: false
       GPAS__URL: "http://gpas:8080/ttp-fhir/fhir/gpas/"
