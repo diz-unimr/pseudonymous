@@ -3,7 +3,7 @@ name: pseudonymous
 
 services:
   mongo:
-    image: mongo:7.0.5
+    image: mongo:8.0.10
     ports:
       - "27017:27017"
 
@@ -19,7 +19,7 @@ services:
       ME_CONFIG_BASICAUTH: false
 
   mongo-seed:
-    image: mongo:7.0.5
+    image: mongo:8.0.10
     volumes:
       - ./seed:/seed
     command: >
