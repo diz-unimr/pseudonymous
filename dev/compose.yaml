@@ -29,11 +29,14 @@ services:
       - mongo
 
   gpas:
-    image: harbor.miracum.org/gpas/gpas:1.13.1-20230127
+    image: mosaicgreifswald/gpas:2024.3.1
     ports:
       - "18080:8080"
     depends_on:
       - mysql
+    environment:
+      WF_ADMIN_PASS: top-secret
+      WF_HEALTHCHECK_URLS: http://localhost:18080
 
   mysql:
     image: mysql:8.3.0
