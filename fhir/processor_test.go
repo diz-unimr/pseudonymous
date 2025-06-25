@@ -101,3 +101,16 @@ func toDoc(v interface{}) (doc bson.D) {
 	_ = bson.Unmarshal(data, &doc)
 	return
 }
+
+func TestNewProcessor(t *testing.T) {
+	p, _ := NewProcessor(&config.AppConfig{Fhir: config.Fhir{
+		Pseudonymizer: config.Pseudonymizer{},
+		Provider: config.Provider{
+			MongoDb: config.MongoDb{
+				Connection: "mongodb://localhost",
+			},
+		},
+	}}, "test")
+
+	assert.Equal(t, 1, p.concurrency)
+}
