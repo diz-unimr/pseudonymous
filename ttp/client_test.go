@@ -22,5 +22,5 @@ func TestSetupDomains(t *testing.T) {
 
 	err := client.SetupDomains(project)
 
-	assert.Equal(t, err, nil)
+	assert.Nil(t, err)
 }
