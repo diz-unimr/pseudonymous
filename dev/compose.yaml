@@ -24,7 +24,7 @@ services:
       - ./seed:/seed
     command: >
       bash -c "for counter in {1..100}; do mongoimport --host mongo --db idat_fhir_test --collection Patient --type json --file /seed/test-data-patient.json --jsonArray && 
-      mongoimport --host mongo --db idat_fhir_test --collection Observation --type json --file /seed/test-data-observation.json --jsonArray; done"
+      mongoimport --host mongo --db idat_fhir_test --collection Encounter --type json --file /seed/test-data-encounter.json --jsonArray; done"
     links:
       - mongo
 
@@ -45,81 +45,6 @@ services:
     volumes:
       - ./sqls/:/docker-entrypoint-initdb.d/
     command: --max_allowed_packet=20M --default-time-zone=Europe/Berlin
-
-  gpasinit-patient:
-    image: curlimages/curl:7.75.0
-    command: |
-      -X POST
-      -H 'Content-Type:application/xml'
-      -d '<?xml version="1.0" encoding="UTF-8"?>
-          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:psn="http://psn.ttp.ganimed.icmvc.emau.org/">
-            <soapenv:Header/>
-              <soapenv:Body>
-                <psn:addDomain>
-                  <domainDTO>
-                    <name>test-patient</name>
-                    <label>test-patient</label>
-                    <checkDigitClass>org.emau.icmvc.ganimed.ttp.psn.generator.NoCheckDigits</checkDigitClass>
-                    <alphabet>org.emau.icmvc.ganimed.ttp.psn.alphabets.Symbol32</alphabet>
-                    <config>
-                        <forceCache>DEFAULT</forceCache>
-                        <includePrefixInCheckDigitCalculation>false</includePrefixInCheckDigitCalculation>
-                        <includeSuffixInCheckDigitCalculation>false</includeSuffixInCheckDigitCalculation>
-                        <maxDetectedErrors>2</maxDetectedErrors>
-                        <psnLength>16</psnLength>
-                        <psnPrefix>PSN-TEST-PATIENT-</psnPrefix>
-                        <psnSuffix></psnSuffix>
-                        <psnsDeletable>false</psnsDeletable>
-                        <sendNotificationsWeb>false</sendNotificationsWeb>
-                        <useLastCharAsDelimiterAfterXChars>0</useLastCharAsDelimiterAfterXChars>
-                        <validateValuesViaParents>OFF</validateValuesViaParents>
-                    </config>
-                  </domainDTO>
-                </psn:addDomain>
-            </soapenv:Body>
-          </soapenv:Envelope>'
-      --retry-connrefuse
-      --connect-timeout 10
-      --max-time 120
-      --retry 10
-      --retry-delay 10
-      http://gpas:8080/gpas/DomainService
-    depends_on:
-      - gpas
-
-  gpasinit-observation:
-    image: curlimages/curl:7.75.0
-    command: |
-      -X POST
-      -H 'Content-Type:application/xml'
-      -d '<?xml version="1.0" encoding="UTF-8"?>
-          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:psn="http://psn.ttp.ganimed.icmvc.emau.org/">
-            <soapenv:Header/>
-              <soapenv:Body>
-                <psn:addDomain>
-                  <domainDTO>
-                    <name>test-observation</name>
-                    <label>test-observation</label>
-                    <checkDigitClass>org.emau.icmvc.ganimed.ttp.psn.generator.NoCheckDigits</checkDigitClass>
-                    <alphabet>org.emau.icmvc.ganimed.ttp.psn.alphabets.Symbol32</alphabet>
-                    <config>
-                        <maxDetectedErrors>2</maxDetectedErrors>
-                        <psnLength>16</psnLength>
-                        <psnPrefix>PSN-TEST-OBS-</psnPrefix>
-                        <psnsDeletable>false</psnsDeletable>
-                    </config>
-                  </domainDTO>
-                </psn:addDomain>
-            </soapenv:Body>
-          </soapenv:Envelope>'
-      --retry-connrefuse
-      --connect-timeout 10
-      --max-time 120
-      --retry 10
-      --retry-delay 10
-      http://gpas:8080/gpas/DomainService
-    depends_on:
-      - gpas
 
   fhir-pseudonymizer:
     image: ghcr.io/miracum/fhir-pseudonymizer:v2.21.9

@@ -17,7 +17,7 @@ type PsnClient struct {
 }
 
 func NewClient(cfg config.Pseudonymizer) *PsnClient {
-	client := resty.New().
+	pseudonymizer := resty.New().
 		SetLogger(config.DefaultLogger()).
 		SetRetryCount(cfg.Retry.Count).
 		SetTimeout(time.Duration(cfg.Retry.Timeout) * time.Second).
@@ -26,11 +26,11 @@ func NewClient(cfg config.Pseudonymizer) *PsnClient {
 
 	if cfg.Auth != nil {
 		if cfg.Auth.Basic != nil {
-			client = client.SetBasicAuth(cfg.Auth.Basic.Username, cfg.Auth.Basic.Password)
+			pseudonymizer = pseudonymizer.SetBasicAuth(cfg.Auth.Basic.Username, cfg.Auth.Basic.Password)
 		}
 	}
 
-	return &PsnClient{rest: client, config: cfg}
+	return &PsnClient{rest: pseudonymizer, config: cfg}
 }
 
 func (c *PsnClient) Send(fhir []byte, domain string) ([]byte, error) {
