@@ -17,6 +17,10 @@ func TestSetupDomains(t *testing.T) {
 
 	client := GpasClient{config: config.Gpas{
 		Url: s.URL,
+		Domains: map[string]string{
+			"foo": "bar",
+			"bla": "blubb",
+		},
 	}}
 	project := "test"
 
