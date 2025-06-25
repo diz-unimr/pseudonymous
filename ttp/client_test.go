@@ -10,7 +10,7 @@ import (
 
 func TestSetupDomains(t *testing.T) {
 
-	s := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	s := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, _ *http.Request) {
 		res.WriteHeader(http.StatusOK)
 	}))
 	defer s.Close()

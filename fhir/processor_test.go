@@ -30,7 +30,7 @@ func TestRun(t *testing.T) {
 		}
 
 		// gpas soap client (domain setup)
-		s := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		s := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, _ *http.Request) {
 			res.WriteHeader(http.StatusOK)
 		}))
 		defer s.Close()
