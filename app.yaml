@@ -3,7 +3,14 @@ app:
   concurrency: 5
 
 gpas:
-  url:
+  domains:
+    - patient: PATIENT
+    - encounter: ENC
+  url: http://localhost:18080/gpas/DomainService?wsdl
+  auth:
+    basic:
+      username:
+      password:
 
 fhir:
   provider:

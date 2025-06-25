@@ -19,7 +19,9 @@ type App struct {
 }
 
 type Gpas struct {
-	Url string `mapstructure:"url"`
+	Url     string            `mapstructure:"url"`
+	Auth    *Auth             `mapstructure:"auth"`
+	Domains map[string]string `mapstructure:"domains"`
 }
 
 type Fhir struct {

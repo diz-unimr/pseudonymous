@@ -9,7 +9,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"pseudonymous/config"
+	"pseudonymous/ttp"
 	"testing"
 )
 
@@ -26,11 +28,19 @@ func TestRun(t *testing.T) {
 			Destination: mt.DB,
 			name:        "MongoDB Test Provider",
 		}
+
+		// gpas soap client (domain setup)
+		s := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+			res.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
 		p := &Processor{
-			provider:    provider,
-			client:      NewClient(config.Pseudonymizer{}),
-			project:     "test",
-			concurrency: 1,
+			provider:      provider,
+			pseudonymizer: NewClient(config.Pseudonymizer{}),
+			project:       "test",
+			gpas:          ttp.NewGpasClient(config.Gpas{Url: s.URL}),
+			concurrency:   1,
 		}
 
 		// test resources
@@ -66,7 +76,7 @@ func TestRun(t *testing.T) {
 		)
 
 		// rest client (pseudonymization)
-		httpmock.ActivateNonDefault(p.client.rest.GetClient())
+		httpmock.ActivateNonDefault(p.pseudonymizer.rest.GetClient())
 		httpmock.RegisterResponder("POST", "/$de-identify", func(req *http.Request) (*http.Response, error) {
 			body, err := io.ReadAll(req.Body)
 			if err != nil {

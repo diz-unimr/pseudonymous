@@ -8,16 +8,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"log/slog"
 	"pseudonymous/config"
+	"pseudonymous/ttp"
 	"strings"
 	"sync"
 	"time"
 )
 
 type Processor struct {
-	provider    Provider
-	client      *PsnClient
-	project     string
-	concurrency int
+	provider      Provider
+	pseudonymizer *PsnClient
+	project       string
+	concurrency   int
+	gpas          *ttp.GpasClient
 }
 
 type ProcessResult struct {
@@ -36,10 +38,11 @@ func NewProcessor(config *config.AppConfig, project string) (*Processor, error) 
 		return nil, errors.New("failed to initialize Provider")
 	}
 	return &Processor{
-		provider:    prov,
-		client:      NewClient(config.Fhir.Pseudonymizer),
-		project:     project,
-		concurrency: concurrency,
+		provider:      prov,
+		pseudonymizer: NewClient(config.Fhir.Pseudonymizer),
+		gpas:          ttp.NewGpasClient(config.Gpas),
+		project:       project,
+		concurrency:   concurrency,
 	}, nil
 }
 
@@ -55,7 +58,7 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 		return nil, err
 	}
 
-	resp, err := p.client.Send(resData, p.project+"-")
+	resp, err := p.pseudonymizer.Send(resData, p.project+"-")
 	if err != nil {
 		slog.Error("Failed to pseudonymize resource", "error", err.Error())
 		return nil, err
@@ -66,6 +69,13 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 
 func (p *Processor) Run() (ProcessResult, error) {
 	start := time.Now()
+
+	err := p.gpas.SetupDomains(p.project)
+	if err != nil {
+		return ProcessResult{}, err
+	}
+
+	slog.Info("gPAS domains initialized", "project", p.project)
 
 	wg := new(sync.WaitGroup)
 	jobs := make(chan MongoResource)
