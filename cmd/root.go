@@ -78,35 +78,6 @@ func initConfig() {
 
 	parseMapEnvs()
 
-	configMap := make(map[string]map[string]string)
-	re := regexp.MustCompile(`(.*)\[[0-9]+]$`)
-	for _, e := range os.Environ() {
-		split := strings.Split(e, "=")
-		k := split[0]
-		v := strings.Split(split[1], ":")
-
-		result := re.FindStringSubmatch(k)
-
-		if result != nil {
-			slog.Info(k, "result", result)
-			key := result[1]
-
-			var val map[string]string
-			val, exists := configMap[key]
-			if !exists {
-				val = make(map[string]string)
-				configMap[key] = val
-			}
-			val[v[0]] = v[1]
-		}
-	}
-
-	// reverse (doesn't work for '-' though)
-	replacer := strings.NewReplacer(`_`, `.`)
-	for k, v := range configMap {
-		viper.Set(replacer.Replace(k), v)
-	}
-
 	if err := viper.ReadInConfig(); err == nil {
 		slog.Info("Using config file", "file", viper.ConfigFileUsed())
 	} else {

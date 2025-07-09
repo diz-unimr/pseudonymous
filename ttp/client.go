@@ -142,7 +142,6 @@ func (c *GpasClient) send(domainConfig DomainDTO) error {
 			defer closeBody(resp.Body)
 
 			respBody, _ := io.ReadAll(resp.Body)
-			//response := string(respBody)
 
 			// parse soap response
 			var fault FaultEnvelope
