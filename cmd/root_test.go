@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -18,6 +19,24 @@ func TestInitConfigWithEnv(t *testing.T) {
 	initConfig()
 
 	assert.Equal(t, expected, cfg.App.LogLevel)
+}
+
+func TestInitConfigWithEnvMap(t *testing.T) {
+	setProjectDir()
+
+	expected := map[string]string{
+		"patient":   "PATIENT",
+		"encounter": "ENC",
+	}
+	i := 0
+	for k, v := range expected {
+		t.Setenv(fmt.Sprintf("GPAS_DOMAINS_CONFIG[%d]", i), fmt.Sprintf("%s:%s", k, v))
+		i++
+	}
+
+	initConfig()
+
+	assert.Equal(t, expected, cfg.Gpas.Domains.Config)
 }
 
 func TestInitConfigFromFlag(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"pseudonymous/config"
@@ -11,22 +12,22 @@ import (
 )
 
 type GpasClient struct {
-	config config.Gpas
+	Config config.Gpas
 }
 
 func NewGpasClient(cfg config.Gpas) *GpasClient {
-	return &GpasClient{config: cfg}
+	return &GpasClient{Config: cfg}
 }
 
-type SoapEnvelope struct {
-	XMLName xml.Name `xml:"soap:Envelope"`
-	XMLNSs  string   `xml:"xmlns:soap,attr"`
-	Psn     string   `xml:"xmlns:psn,attr"`
-	Header  string   `xml:"soap:Header"`
-	Body    SoapBody `xml:"soap:Body"`
+type AddDomainEnvelope struct {
+	XMLName xml.Name      `xml:"soap:Envelope"`
+	XMLNSs  string        `xml:"xmlns:soap,attr"`
+	Psn     string        `xml:"xmlns:psn,attr"`
+	Header  string        `xml:"soap:Header"`
+	Body    AddDomainBody `xml:"soap:Body"`
 }
 
-type SoapBody struct {
+type AddDomainBody struct {
 	XMLName   xml.Name  `xml:"soap:Body"`
 	AddDomain AddDomain `xml:"psn:addDomain"`
 }
@@ -49,6 +50,21 @@ type DomainConfig struct {
 	PsnsDeletable bool   `xml:"psnsDeletable"`
 }
 
+type FaultEnvelope struct {
+	XMLName xml.Name  `xml:"Envelope"`
+	Body    FaultBody `xml:"Body"`
+}
+
+type FaultBody struct {
+	XMLName xml.Name `xml:"Body"`
+	Fault   Fault    `xml:"Fault"`
+}
+
+type Fault struct {
+	FaultCode   string `xml:"faultcode"`
+	FaultString string `xml:"faultstring"`
+}
+
 func (c *GpasClient) SetupDomains(project string) error {
 	// project parent domain
 	domainConfig := createDomainDto(project, "", "")
@@ -57,7 +73,7 @@ func (c *GpasClient) SetupDomains(project string) error {
 		return err
 	}
 
-	for domain, prefix := range c.config.Domains {
+	for domain, prefix := range c.Config.Domains.Config {
 		domainConfig = createDomainDto(project, domain, prefix)
 		if err := c.send(domainConfig); err != nil {
 			slog.Error("Failed to create gPAS domain", "domain", domainConfig.Name, "error", err)
@@ -95,10 +111,10 @@ func createDomainDto(project string, idType string, prefix string) DomainDTO {
 
 func (c *GpasClient) send(domainConfig DomainDTO) error {
 
-	soap := SoapEnvelope{
+	soap := AddDomainEnvelope{
 		XMLNSs: "http://schemas.xmlsoap.org/soap/envelope/",
 		Psn:    "http://psn.ttp.ganimed.icmvc.emau.org/",
-		Body: SoapBody{
+		Body: AddDomainBody{
 			AddDomain: AddDomain{DomainDTO: domainConfig},
 		},
 	}
@@ -109,19 +125,44 @@ func (c *GpasClient) send(domainConfig DomainDTO) error {
 	}
 
 	// send soap request
-	req, err := http.NewRequest(http.MethodPost, c.config.Url, bytes.NewBufferString(string(body)))
+	req, err := http.NewRequest(http.MethodPost, c.Config.Url, bytes.NewBufferString(string(body)))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "text/xml")
-	if c.config.Auth != nil && c.config.Auth.Basic != nil {
-		req.SetBasicAuth(c.config.Auth.Basic.Username, c.config.Auth.Basic.Password)
+	if c.Config.Auth != nil && c.Config.Auth.Basic != nil {
+		req.SetBasicAuth(c.Config.Auth.Basic.Username, c.Config.Auth.Basic.Password)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil && resp.StatusCode != http.StatusOK {
+
+		if resp.StatusCode == http.StatusInternalServerError && c.Config.Domains.UseExisting {
+			// check response body
+			defer closeBody(resp.Body)
+
+			respBody, _ := io.ReadAll(resp.Body)
+			//response := string(respBody)
+
+			// parse soap response
+			var fault FaultEnvelope
+			err = xml.Unmarshal(respBody, &fault)
+			if err != nil {
+				return err
+			}
+
+			if fault.Body.Fault.FaultString == fmt.Sprintf("domain %s already exists", domainConfig.Name) {
+				slog.Warn("Reusing existing domain", "domain", domainConfig.Name)
+				return nil
+			}
+		}
+
 		err = fmt.Errorf("soap request failed with status code %d", resp.StatusCode)
 	}
 
 	return err
+}
+
+func closeBody(body io.ReadCloser) {
+	_ = body.Close()
 }

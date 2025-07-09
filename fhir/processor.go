@@ -70,12 +70,13 @@ func (p *Processor) Pseudonymize(resource bson.M) ([]byte, error) {
 func (p *Processor) Run() (ProcessResult, error) {
 	start := time.Now()
 
-	err := p.gpas.SetupDomains(p.project)
-	if err != nil {
-		return ProcessResult{}, err
+	if p.gpas.Config.Domains.AutoCreate {
+		err := p.gpas.SetupDomains(p.project)
+		if err != nil {
+			return ProcessResult{}, err
+		}
+		slog.Info("gPAS domains initialized", "project", p.project)
 	}
-
-	slog.Info("gPAS domains initialized", "project", p.project)
 
 	wg := new(sync.WaitGroup)
 	jobs := make(chan MongoResource)
