@@ -19,9 +19,9 @@ type App struct {
 }
 
 type Gpas struct {
-	Url     string            `mapstructure:"url"`
-	Auth    *Auth             `mapstructure:"auth"`
-	Domains map[string]string `mapstructure:"domains"`
+	Url     string  `mapstructure:"url"`
+	Auth    *Auth   `mapstructure:"auth"`
+	Domains Domains `mapstructure:"domains"`
 }
 
 type Fhir struct {
@@ -58,6 +58,12 @@ type Retry struct {
 	Timeout int `mapstructure:"timeout"`
 	Wait    int `mapstructure:"wait"`
 	MaxWait int `mapstructure:"max-wait"`
+}
+
+type Domains struct {
+	AutoCreate  bool              `mapstructure:"auto-create"`
+	UseExisting bool              `mapstructure:"use-existing"`
+	Config      map[string]string `mapstructure:"config"`
 }
 
 func ConfigureLogger(c AppConfig) {

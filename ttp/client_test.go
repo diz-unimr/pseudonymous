@@ -15,11 +15,13 @@ func TestSetupDomains(t *testing.T) {
 	}))
 	defer s.Close()
 
-	client := GpasClient{config: config.Gpas{
+	client := GpasClient{Config: config.Gpas{
 		Url: s.URL,
-		Domains: map[string]string{
-			"foo": "bar",
-			"bla": "blubb",
+		Domains: config.Domains{
+			Config: map[string]string{
+				"foo": "bar",
+				"bla": "blubb",
+			},
 		},
 	}}
 	project := "test"

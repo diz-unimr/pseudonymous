@@ -4,8 +4,10 @@ app:
 
 gpas:
   domains:
-    - patient: PATIENT
-    - encounter: ENC
+    auto-create: true
+    use-existing: false
+    config:
+      - patient: PATIENT
   url: http://localhost:18080/gpas/DomainService?wsdl
   auth:
     basic:
